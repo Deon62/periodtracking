@@ -94,6 +94,13 @@ const paths = {
       <Path d="M11.2 5.6 4.8 12l6.4 6.4" {...p} />
     </>
   ),
+  // A speech bubble with a spark in it: the assistant, not a generic robot.
+  ai: (p) => (
+    <>
+      <Path d="M20.4 13.4c0 3.5-3.2 6.3-7.2 6.3a8.4 8.4 0 0 1-2.6-.4L6 20.8l1.3-3.4a6 6 0 0 1-2.7-4.9c0-3.5 3.2-6.3 7.1-6.3" {...p} />
+      <Path d="M16.9 2.9l.9 2.4a1 1 0 0 0 .6.6l2.4.9-2.4.9a1 1 0 0 0-.6.6l-.9 2.4-.9-2.4a1 1 0 0 0-.6-.6l-2.4-.9 2.4-.9a1 1 0 0 0 .6-.6z" {...p} />
+    </>
+  ),
   chevronLeft: (p) => <Path d="M14.6 5.4 8 12l6.6 6.6" {...p} />,
   chevronRight: (p) => <Path d="M9.4 5.4 16 12l-6.6 6.6" {...p} />,
   chevronDown: (p) => <Path d="M5.4 9.4 12 16l6.6-6.6" {...p} />,

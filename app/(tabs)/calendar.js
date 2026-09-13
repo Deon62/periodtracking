@@ -6,6 +6,7 @@ import { colors, radius, absoluteFill } from '../../src/theme';
 import { Icon } from '../../src/icons';
 import { Screen, Text, Row, Button, Header } from '../../src/components/ui';
 import { Fab } from '../../src/components/Fab';
+import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 import {
   today,
   startOfMonth,
@@ -27,6 +28,7 @@ export default function CalendarScreen() {
   const { model, logs, togglePeriodDay, setPeriodEnd } = useStore();
   const [month, setMonth] = useState(startOfMonth(today()));
   const [selected, setSelected] = useState(null);
+  const [aiSoon, setAiSoon] = useState(false);
 
   const cells = useMemo(() => {
     const total = daysInMonth(month);
@@ -145,6 +147,16 @@ export default function CalendarScreen() {
           shortcut to right now. */}
       <Fab label="Add an entry for today" onPress={() => router.push('/log')} />
 
+      {/* Stacked above the add button, and lighter than it — the assistant is
+          not the main thing you come to this screen to do. */}
+      <Fab
+        icon="ai"
+        variant="secondary"
+        stack={1}
+        label="Ask nimoh"
+        onPress={() => setAiSoon(true)}
+      />
+
       <DaySheet
         dayKey={selected}
         onClose={() => setSelected(null)}
@@ -158,6 +170,17 @@ export default function CalendarScreen() {
           setSelected(null);
           router.push({ pathname: '/log', params: { date: k } });
         }}
+      />
+
+      <ConfirmDialog
+        visible={aiSoon}
+        icon="ai"
+        title="Ask nimoh"
+        message="An assistant that knows your cycle and can answer questions about it. Coming soon."
+        confirmLabel="Got it"
+        dismissOnly
+        onCancel={() => setAiSoon(false)}
+        onConfirm={() => setAiSoon(false)}
       />
     </View>
   );
