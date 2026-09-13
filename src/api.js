@@ -152,14 +152,29 @@ export async function fetchAll(userId) {
 // fire-and-forget write in the store — dies on "undefined is not a function".
 // Marking these async wraps the builder in a real Promise at the boundary.
 
+/**
+ * Upsert, not update.
+ *
+ * `update` matches zero rows and reports success when the profile does not
+ * exist — which is the case for any account created before the handle_new_user
+ * trigger was installed. Every setting she changed went nowhere and said
+ * nothing. Upserting on the primary key writes the row either way.
+ */
 export async function saveProfile(userId, patch) {
   const columns = profilePatch(patch);
   if (!Object.keys(columns).length) return { error: null };
-  return supabase.from('profiles').update(columns).eq('id', userId);
+  return supabase.from('profiles').upsert({ id: userId, ...columns }, { onConflict: 'id' });
 }
 
 export async function saveTourSeen(userId, seen) {
-  return supabase.from('profiles').update({ tour_seen: seen }).eq('id', userId);
+  return supabase
+    .from('profiles')
+    .upsert({ id: userId, tour_seen: seen }, { onConflict: 'id' });
+}
+
+/** Guarantees the row exists, without disturbing anything already in it. */
+export async function ensureProfile(userId) {
+  return supabase.from('profiles').upsert({ id: userId }, { onConflict: 'id' });
 }
 
 export async function upsertLog(userId, date, log) {
@@ -198,13 +213,14 @@ export async function syncPeriods(userId, before, after) {
   });
 
   if (removed.length) {
-    await supabase
+    const { error } = await supabase
       .from('periods')
       .delete()
       .in('id', removed.map((p) => p.id));
+    if (error) return { error, inserted: [] };
   }
 
-  await Promise.all(
+  const updates = await Promise.all(
     changed.map((p) =>
       supabase
         .from('periods')
@@ -212,6 +228,8 @@ export async function syncPeriods(userId, before, after) {
         .eq('id', p.id)
     )
   );
+  const updateFailure = updates.find((r) => r.error);
+  if (updateFailure) return { error: updateFailure.error, inserted: [] };
 
   if (!added.length) return { inserted: [] };
 

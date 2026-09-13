@@ -8,7 +8,7 @@ import { Icon } from '../../src/icons';
 import { Text, Button, Row } from '../../src/components/ui';
 import { CycleRing } from '../../src/components/CycleRing';
 import { today, longDate, prettyDate, daysBetween } from '../../src/cycle';
-import { unreadCount } from '../../src/notifications';
+import { buildNotifications, unreadCount } from '../../src/notifications';
 
 function greeting() {
   const h = new Date().getHours();
@@ -70,7 +70,10 @@ export default function Today() {
     };
   }, [model, key]);
 
-  const unread = unreadCount();
+  const unread = useMemo(
+    () => unreadCount(buildNotifications(model, logs)),
+    [model, logs]
+  );
 
   const loggedCount =
     (log?.symptoms?.length || 0) + (log?.moods?.length || 0) + (log?.flow ? 1 : 0);

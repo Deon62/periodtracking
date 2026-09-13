@@ -2,6 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { TabBar } from '../../src/components/TabBar';
 import { Tour } from '../../src/components/Tour';
+import { SyncBanner } from '../../src/components/SyncBanner';
 import { colors } from '../../src/theme';
 
 export default function TabsLayout() {
@@ -22,6 +23,7 @@ export default function TabsLayout() {
 
       {/* Lives here rather than in the root layout so it can never appear over
           sign in, and renders itself as null once it has been seen. */}
+      <SyncBanner />
       <Tour />
     </>
   );

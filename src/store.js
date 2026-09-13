@@ -96,6 +96,32 @@ export function StoreProvider({ children }) {
     setState(next);
   }, []);
 
+  /**
+   * Every write goes through here.
+   *
+   * supabase-js resolves with `{ error }` instead of rejecting, so the
+   * `.catch(() => {})` these calls used to carry never fired once — a write
+   * refused by row level security looked exactly like one that worked, and the
+   * data quietly stayed on the phone. Now a failure says so, on screen and in
+   * the Metro log.
+   */
+  const write = useCallback(async (promise, what) => {
+    try {
+      const result = await promise;
+      if (result?.error) {
+        console.warn(`[nimoh] ${what} failed:`, result.error.message || result.error);
+        setSyncError(`Could not save ${what}.`);
+        return result;
+      }
+      setSyncError('');
+      return result;
+    } catch (e) {
+      console.warn(`[nimoh] ${what} threw:`, e?.message || e);
+      setSyncError(`Could not save ${what}.`);
+      return { error: e };
+    }
+  }, []);
+
   // --- session -------------------------------------------------------------
 
   useEffect(() => {
@@ -128,10 +154,15 @@ export function StoreProvider({ children }) {
 
     const result = await api.fetchAll(id);
     if (result.error) {
+      console.warn('[nimoh] load failed:', result.error.message || result.error);
       setSyncError('Could not reach the server. Showing your last saved data.');
       setSyncing(false);
       return;
     }
+
+    // An account made before the sign-up trigger existed has no profile row,
+    // and without one every settings write lands nowhere.
+    if (!result.profile) api.ensureProfile(id).catch(() => {});
 
     commit({
       settings: result.profile
@@ -177,9 +208,9 @@ export function StoreProvider({ children }) {
       const s = stateRef.current;
       commit({ ...s, settings: { ...s.settings, ...patch } });
       const id = userRef.current;
-      if (id) api.saveProfile(id, patch).catch(() => {});
+      if (id) write(api.saveProfile(id, patch), 'your settings');
     },
-    [commit]
+    [commit, write]
   );
 
   /**
@@ -211,7 +242,7 @@ export function StoreProvider({ children }) {
 
       const now = stateRef.current;
       commit({ ...now, settings: { ...now.settings, avatarUri: url } });
-      api.saveProfile(id, { avatarUri: url }).catch(() => {});
+      write(api.saveProfile(id, { avatarUri: url }), 'your photo');
       return { url };
     },
     [commit]
@@ -221,16 +252,16 @@ export function StoreProvider({ children }) {
     const s = stateRef.current;
     commit({ ...s, settings: { ...s.settings, avatarUri: null } });
     const id = userRef.current;
-    if (id) await api.removeAvatar(id).catch(() => {});
-  }, [commit]);
+    if (id) await write(api.removeAvatar(id), 'your photo');
+  }, [commit, write]);
 
   const setTourSeen = useCallback(
     (seen) => {
       commit({ ...stateRef.current, tourSeen: seen });
       const id = userRef.current;
-      if (id) api.saveTourSeen(id, seen).catch(() => {});
+      if (id) write(api.saveTourSeen(id, seen), 'your progress');
     },
-    [commit]
+    [commit, write]
   );
 
   const completeTour = useCallback(() => setTourSeen(true), [setTourSeen]);
@@ -287,9 +318,8 @@ export function StoreProvider({ children }) {
 
       const id = userRef.current;
       if (!id) return;
-      api
-        .syncPeriods(id, before, periods)
-        .then(({ inserted }) => {
+      write(api.syncPeriods(id, before, periods), 'that period')
+        .then(({ inserted } = {}) => {
           if (!inserted?.length) return;
           // Fold the new ids in, so the next edit updates the row rather than
           // inserting a second one for the same start date.
@@ -299,10 +329,9 @@ export function StoreProvider({ children }) {
             ...current,
             periods: current.periods.map((p) => (p.id ? p : byStart.get(p.start) || p)),
           });
-        })
-        .catch(() => {});
+        });
     },
-    [commit]
+    [commit, write]
   );
 
   // --- logs ----------------------------------------------------------------
@@ -327,18 +356,20 @@ export function StoreProvider({ children }) {
 
       const id = userRef.current;
       if (!id) return;
-      const write = empty ? api.deleteLog(id, key) : api.upsertLog(id, key, merged);
-      write.catch(() => {});
+      write(
+        empty ? api.deleteLog(id, key) : api.upsertLog(id, key, merged),
+        'your entry'
+      );
     },
-    [commit]
+    [commit, write]
   );
 
   const clearAll = useCallback(async () => {
     const s = stateRef.current;
     commit({ ...EMPTY, settings: s.settings, tourSeen: s.tourSeen });
     const id = userRef.current;
-    if (id) await api.clearUserData(id).catch(() => {});
-  }, [commit]);
+    if (id) await write(api.clearUserData(id), 'that change');
+  }, [commit, write]);
 
   // --- derived -------------------------------------------------------------
 
@@ -361,6 +392,7 @@ export function StoreProvider({ children }) {
       ready,
       syncing,
       syncError,
+      dismissSyncError: () => setSyncError(''),
       account,
       ...state,
       model,

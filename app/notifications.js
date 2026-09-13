@@ -1,10 +1,11 @@
-import React, { useMemo, useState } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { colors, radius } from '../src/theme';
+import { useStore } from '../src/store';
+import { colors } from '../src/theme';
 import { Icon } from '../src/icons';
 import { Screen, Text, Row, PageHeader, Hairline } from '../src/components/ui';
-import { getNotifications, timeAgo, KINDS } from '../src/notifications';
+import { buildNotifications, timeAgo, isNew, KINDS } from '../src/notifications';
 
 const TONES = {
   brand: { bg: colors.brandSoft, fg: colors.brand },
@@ -14,34 +15,22 @@ const TONES = {
 
 export default function Notifications() {
   const router = useRouter();
-  const [items, setItems] = useState(getNotifications);
+  const { model, logs } = useStore();
+
+  const items = useMemo(() => buildNotifications(model, logs), [model, logs]);
 
   // Two groups, not a timestamp on every row: what is new is the only division
   // that earns its heading here.
   const { fresh, earlier } = useMemo(
-    () => ({
-      fresh: items.filter((n) => !n.read),
-      earlier: items.filter((n) => n.read),
-    }),
+    () => ({ fresh: items.filter(isNew), earlier: items.filter((n) => !isNew(n)) }),
     [items]
   );
-
-  const markAllRead = () => setItems((list) => list.map((n) => ({ ...n, read: true })));
 
   return (
     <Screen contentStyle={{ paddingBottom: 48 }}>
       <PageHeader
         title="Notifications"
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        right={
-          fresh.length > 0 ? (
-            <Pressable onPress={markAllRead} hitSlop={10}>
-              <Text weight="semibold" style={styles.markAll}>
-                Mark all read
-              </Text>
-            </Pressable>
-          ) : null
-        }
       />
 
       {items.length === 0 ? (
@@ -51,16 +40,7 @@ export default function Notifications() {
           {fresh.length > 0 && (
             <Group title="New">
               {fresh.map((n, i) => (
-                <NotificationRow
-                  key={n.id}
-                  item={n}
-                  last={i === fresh.length - 1}
-                  onPress={() =>
-                    setItems((list) =>
-                      list.map((x) => (x.id === n.id ? { ...x, read: true } : x))
-                    )
-                  }
-                />
+                <NotificationRow key={n.id} item={n} last={i === fresh.length - 1} />
               ))}
             </Group>
           )}
@@ -76,7 +56,7 @@ export default function Notifications() {
       )}
 
       <Text weight="medium" style={styles.note}>
-        Showing sample notifications. Reminders switch on in Settings.
+        Drawn from what you have tracked. Reminders switch on in Settings.
       </Text>
     </Screen>
   );
@@ -93,17 +73,14 @@ function Group({ title, children }) {
   );
 }
 
-function NotificationRow({ item, last, onPress }) {
+function NotificationRow({ item, last }) {
   const kind = KINDS[item.kind] || KINDS.reminder;
   const tone = TONES[kind.tone] || TONES.slate;
+  const fresh = isNew(item);
 
   return (
     <View>
-      <Pressable
-        onPress={onPress}
-        disabled={!onPress}
-        style={({ pressed }) => [styles.row, pressed && { opacity: 0.6 }]}
-      >
+      <View style={styles.row}>
         <View style={[styles.puck, { backgroundColor: tone.bg }]}>
           <Icon name={kind.icon} size={18} color={tone.fg} strokeWidth={1.8} />
         </View>
@@ -111,13 +88,13 @@ function NotificationRow({ item, last, onPress }) {
         <View style={{ flex: 1 }}>
           <Row style={{ alignItems: 'flex-start' }}>
             <Text
-              weight={item.read ? 'semibold' : 'bold'}
-              style={[styles.title, !item.read && { color: colors.ink }]}
+              weight={fresh ? 'bold' : 'semibold'}
+              style={[styles.title, fresh && { color: colors.ink }]}
             >
               {item.title}
             </Text>
             <Text weight="medium" style={styles.time}>
-              {timeAgo(item.minutesAgo)}
+              {timeAgo(item.date)}
             </Text>
           </Row>
           <Text weight="medium" style={styles.body}>
@@ -127,8 +104,8 @@ function NotificationRow({ item, last, onPress }) {
 
         {/* The unread mark is a dot, not a colour wash across the row — the
             list stays readable and the new ones still stand out. */}
-        {!item.read && <View style={styles.unread} />}
-      </Pressable>
+        {fresh && <View style={styles.unread} />}
+      </View>
       {!last && <Hairline inset={54} />}
     </View>
   );
@@ -144,14 +121,13 @@ function Empty() {
         Nothing yet
       </Text>
       <Text weight="medium" style={styles.emptyBody}>
-        Reminders and the patterns we spot will turn up here.
+        Log a period and the reminders and patterns we spot will turn up here.
       </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  markAll: { fontSize: 13, color: colors.brand },
   group: { marginTop: 26 },
   groupTitle: {
     fontSize: 11,
