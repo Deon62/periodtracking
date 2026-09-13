@@ -9,7 +9,7 @@ import { TAB_BAR_HEIGHT } from './TabBar';
 /** Floating action button, parked just above the tab bar on the right. */
 export function Fab({ onPress, icon = 'plus', label }) {
   const insets = useSafeAreaInsets();
-  const bottom = Math.max(insets.bottom, 10) + TAB_BAR_HEIGHT + 16;
+  const bottom = Math.max(insets.bottom, 10) + TAB_BAR_HEIGHT + 6;
 
   return (
     <Pressable

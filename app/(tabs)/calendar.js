@@ -40,73 +40,79 @@ export default function CalendarScreen() {
   const now = today();
 
   return (
-    <Screen>
-      <Header title="Calendar" subtitle="Your cycle" />
+    // The button and the sheet sit outside the Screen on purpose: Screen is a
+    // ScrollView, and an absolutely positioned child of one anchors to the
+    // scroll content, not the viewport — which parked the button under the
+    // calendar instead of above the tab bar.
+    <View style={styles.root}>
+      <Screen>
+        <Header title="Calendar" subtitle="Your cycle" />
 
-      <View style={styles.card}>
-        <Row style={styles.monthBar}>
-          <Pressable onPress={() => setMonth(addMonths(month, -1))} style={styles.arrow}>
-            <Icon name="chevronLeft" size={18} color={colors.inkSoft} />
-          </Pressable>
-          <Text weight="semibold" style={styles.monthLabel}>
-            {monthLabel(month)}
-          </Text>
-          <Pressable onPress={() => setMonth(addMonths(month, 1))} style={styles.arrow}>
-            <Icon name="chevronRight" size={18} color={colors.inkSoft} />
-          </Pressable>
-        </Row>
-
-        <Row style={styles.weekRow}>
-          {WEEK.map((d, i) => (
-            <Text key={i} weight="semibold" style={styles.weekLabel}>
-              {d}
+        <View style={styles.card}>
+          <Row style={styles.monthBar}>
+            <Pressable onPress={() => setMonth(addMonths(month, -1))} style={styles.arrow}>
+              <Icon name="chevronLeft" size={18} color={colors.inkSoft} />
+            </Pressable>
+            <Text weight="semibold" style={styles.monthLabel}>
+              {monthLabel(month)}
             </Text>
-          ))}
-        </Row>
+            <Pressable onPress={() => setMonth(addMonths(month, 1))} style={styles.arrow}>
+              <Icon name="chevronRight" size={18} color={colors.inkSoft} />
+            </Pressable>
+          </Row>
 
-        <View style={styles.grid}>
-          {cells.map((key, i) => {
-            if (!key) return <View key={`e${i}`} style={styles.cell} />;
-            const status = dayStatus(key, model).type;
-            const isToday = key === now;
-            const hasLog = !!logs[key];
-            return (
-              <Pressable key={key} style={styles.cell} onPress={() => setSelected(key)}>
-                <View
-                  style={[
-                    styles.day,
-                    status === 'period' && styles.dayPeriod,
-                    status === 'predicted' && styles.dayPredicted,
-                    status === 'fertile' && styles.dayFertile,
-                    status === 'ovulation' && styles.dayOvulation,
-                    isToday && styles.dayToday,
-                  ]}
-                >
-                  <Text
-                    weight={isToday || status === 'period' ? 'bold' : 'medium'}
+          <Row style={styles.weekRow}>
+            {WEEK.map((d, i) => (
+              <Text key={i} weight="semibold" style={styles.weekLabel}>
+                {d}
+              </Text>
+            ))}
+          </Row>
+
+          <View style={styles.grid}>
+            {cells.map((key, i) => {
+              if (!key) return <View key={`e${i}`} style={styles.cell} />;
+              const status = dayStatus(key, model).type;
+              const isToday = key === now;
+              const hasLog = !!logs[key];
+              return (
+                <Pressable key={key} style={styles.cell} onPress={() => setSelected(key)}>
+                  <View
                     style={[
-                      styles.dayText,
-                      status === 'period' && { color: colors.white },
-                      status === 'ovulation' && { color: colors.teal },
-                      status === 'predicted' && { color: colors.brandDeep },
+                      styles.day,
+                      status === 'period' && styles.dayPeriod,
+                      status === 'predicted' && styles.dayPredicted,
+                      status === 'fertile' && styles.dayFertile,
+                      status === 'ovulation' && styles.dayOvulation,
+                      isToday && styles.dayToday,
                     ]}
                   >
-                    {fromKey(key).getDate()}
-                  </Text>
-                </View>
-                <View style={[styles.logDot, hasLog && { backgroundColor: colors.faint }]} />
-              </Pressable>
-            );
-          })}
+                    <Text
+                      weight={isToday || status === 'period' ? 'bold' : 'medium'}
+                      style={[
+                        styles.dayText,
+                        status === 'period' && { color: colors.white },
+                        status === 'ovulation' && { color: colors.teal },
+                        status === 'predicted' && { color: colors.brandDeep },
+                      ]}
+                    >
+                      {fromKey(key).getDate()}
+                    </Text>
+                  </View>
+                  <View style={[styles.logDot, hasLog && { backgroundColor: colors.faint }]} />
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.legend}>
-        <Legend swatch={styles.dayPeriod} label="Period" />
-        <Legend swatch={styles.dayPredicted} label="Predicted" />
-        <Legend swatch={styles.dayFertile} label="Fertile window" />
-        <Legend swatch={styles.dayOvulation} label="Ovulation" />
-      </View>
+        <View style={styles.legend}>
+          <Legend swatch={styles.dayPeriod} label="Period" />
+          <Legend swatch={styles.dayPredicted} label="Predicted" />
+          <Legend swatch={styles.dayFertile} label="Fertile window" />
+          <Legend swatch={styles.dayOvulation} label="Ovulation" />
+        </View>
+      </Screen>
 
       {/* Adding an entry sits with the calendar rather than Today: a day is
           what an entry belongs to. Tap a day for that day; the button is the
@@ -125,7 +131,7 @@ export default function CalendarScreen() {
           router.push({ pathname: '/log', params: { date: k } });
         }}
       />
-    </Screen>
+    </View>
   );
 }
 
@@ -208,6 +214,7 @@ function label(list, id) {
 const CELL = `${100 / 7}%`;
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.white },
   card: {
     marginTop: 18,
     padding: 14,

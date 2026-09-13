@@ -1,24 +1,17 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Switch, Alert, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Switch, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useStore } from '../src/store';
 import { colors, radius } from '../src/theme';
 import { Icon } from '../src/icons';
 import { Screen, Text, Row, PageHeader, Section, Hairline, ListRow } from '../src/components/ui';
+import { ConfirmDialog } from '../src/components/ConfirmDialog';
 
 export default function Settings() {
   const router = useRouter();
   const { settings, setSettings, clearAll, replayTour } = useStore();
 
-  const confirmClear = () =>
-    Alert.alert(
-      'Delete all data',
-      'Every period, log and setting on this device will be erased. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: clearAll },
-      ]
-    );
+  const [confirming, setConfirming] = useState(false);
 
   return (
     <Screen contentStyle={{ paddingBottom: 56 }}>
@@ -88,9 +81,9 @@ export default function Settings() {
       </Section>
 
       <Section title="Data">
-        <ListRow icon="shield" label="Stays on this device" value="Private" />
+        <ListRow icon="shield" label="Only you can see your data" value="Private" />
         <Hairline inset={42} />
-        <ListRow icon="trash" label="Delete all data" danger onPress={confirmClear} />
+        <ListRow icon="trash" label="Delete all data" danger onPress={() => setConfirming(true)} />
       </Section>
 
       <View style={styles.about}>
@@ -103,6 +96,20 @@ export default function Settings() {
           Version 1.0.0
         </Text>
       </View>
+
+      <ConfirmDialog
+        visible={confirming}
+        icon="trash"
+        title="Delete everything?"
+        message="Every period and log on your account is erased. This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          clearAll();
+        }}
+      />
     </Screen>
   );
 }

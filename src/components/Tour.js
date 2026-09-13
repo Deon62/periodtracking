@@ -43,16 +43,18 @@ const STEPS = [
   {
     icon: 'insights',
     title: 'Then the patterns',
-    body: 'After two periods, Insights starts drawing your rhythm. Nothing leaves your phone.',
+    body: 'After two periods, Insights starts drawing your rhythm. Private to you, always.',
   },
 ];
 
 export function Tour() {
-  const { account, tourSeen, completeTour } = useStore();
+  const { account, tourSeen, syncing, completeTour } = useStore();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
 
-  if (!account || tourSeen) return null;
+  // `syncing` matters: tourSeen is false until the profile arrives, and a
+  // returning user must not see the walkthrough flash in that gap.
+  if (!account || syncing || tourSeen) return null;
 
   const last = step === STEPS.length - 1;
   const current = STEPS[step];

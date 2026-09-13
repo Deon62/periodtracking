@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "co.ardena.nimoh"
+      "package": "co.ardena.nimoh",
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +40,9 @@
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to choose a profile picture from your photos."
         }
-      ]
+      ],
+      "expo-sqlite",
+      "expo-web-browser"
     ],
     "scheme": "nimoh",
     "backgroundColor": "#121218"

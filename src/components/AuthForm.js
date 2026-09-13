@@ -7,11 +7,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Google from '../../assets/google.svg';
 import { useStore } from '../store';
+import { friendlyAuthError } from '../supabase';
 import { colors, radius, font } from '../theme';
 import { Text, Button } from './ui';
 
@@ -36,14 +38,39 @@ export function AuthForm({ mode }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(null); // 'form' | 'google'
 
-  const submit = () => {
+  const submit = async () => {
+    if (busy) return;
     if (isSignUp && !name.trim()) return setError('Tell us what to call you.');
     if (!EMAIL.test(email.trim())) return setError('That email does not look right.');
     if (password.length < 6) return setError('Use at least 6 characters.');
+
     setError('');
-    if (isSignUp) signUp({ name, email });
-    else signIn({ email });
+    setNotice('');
+    setBusy('form');
+    const { data, error: authError } = isSignUp
+      ? await signUp({ name, email, password })
+      : await signIn({ email, password });
+    setBusy(null);
+
+    if (authError) return setError(friendlyAuthError(authError));
+    // With email confirmation switched on there is no session yet, and nothing
+    // visible would happen otherwise.
+    if (isSignUp && data?.user && !data.session) {
+      setNotice('Almost there — check your inbox to confirm your email.');
+    }
+  };
+
+  const google = async () => {
+    if (busy) return;
+    setError('');
+    setNotice('');
+    setBusy('google');
+    const { error: authError, cancelled } = (await signInWithGoogle()) || {};
+    setBusy(null);
+    if (authError && !cancelled) setError(friendlyAuthError(authError));
   };
 
   return (
@@ -100,11 +127,15 @@ export function AuthForm({ mode }) {
         />
 
         {/* The slot is always here so the form does not jump when it fills. */}
-        <Text weight="medium" style={styles.error}>
-          {error}
+        <Text weight="medium" style={[styles.error, !!notice && styles.notice]}>
+          {error || notice}
         </Text>
 
-        <Button label={isSignUp ? 'Get started' : 'Sign in'} onPress={submit} />
+        <Button
+          label={isSignUp ? 'Get started' : 'Sign in'}
+          onPress={submit}
+          disabled={!!busy}
+        />
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
@@ -115,13 +146,23 @@ export function AuthForm({ mode }) {
         </View>
 
         <Pressable
-          onPress={signInWithGoogle}
-          style={({ pressed }) => [styles.google, pressed && { opacity: 0.7 }]}
+          onPress={google}
+          disabled={!!busy}
+          style={({ pressed }) => [
+            styles.google,
+            (pressed || !!busy) && { opacity: 0.7 },
+          ]}
         >
-          <Google width={20} height={20} />
-          <Text weight="semibold" style={styles.googleText}>
-            Continue with Google
-          </Text>
+          {busy === 'google' ? (
+            <ActivityIndicator color={colors.inkSoft} />
+          ) : (
+            <>
+              <Google width={20} height={20} />
+              <Text weight="semibold" style={styles.googleText}>
+                Continue with Google
+              </Text>
+            </>
+          )}
         </Pressable>
 
         <Pressable
@@ -202,7 +243,9 @@ const styles = StyleSheet.create({
     color: colors.brand,
     minHeight: 18,
     marginBottom: 8,
+    textAlign: 'center',
   },
+  notice: { color: colors.teal },
   switch: { alignSelf: 'center', paddingVertical: 18 },
   switchText: { fontSize: 14, color: colors.muted },
   switchLink: { color: colors.brand },

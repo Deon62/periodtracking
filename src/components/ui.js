@@ -5,6 +5,8 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -23,7 +25,16 @@ export function Text({ style, weight = 'medium', children, ...rest }) {
   );
 }
 
-export function Screen({ children, scroll = true, style, contentStyle }) {
+/**
+ * Every scrolling page is keyboard-aware, so no screen has to solve this for
+ * itself: iOS lifts the content with KeyboardAvoidingView and inset adjustment,
+ * Android resizes the window instead (see softwareKeyboardLayoutMode in
+ * app.json) and the shrunken ScrollView keeps the field reachable.
+ *
+ * `scrollRef` is forwarded for the one case insets cannot cover — a field at
+ * the very bottom of a page, which scrolls itself into view on focus.
+ */
+export function Screen({ children, scroll = true, style, contentStyle, scrollRef }) {
   const insets = useSafeAreaInsets();
   // Scrolling pages get extra slack so the last row clears the floating tab
   // bar; a fixed page only needs the bar's own height.
@@ -36,13 +47,22 @@ export function Screen({ children, scroll = true, style, contentStyle }) {
     return <View style={[styles.screen, padding, style]}>{children}</View>;
   }
   return (
-    <ScrollView
-      style={[styles.screen, style]}
-      contentContainerStyle={[padding, contentStyle]}
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {children}
-    </ScrollView>
+      <ScrollView
+        ref={scrollRef}
+        style={[styles.screen, style]}
+        contentContainerStyle={[padding, contentStyle]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
+      >
+        {children}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

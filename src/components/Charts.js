@@ -264,8 +264,9 @@ export function Sparkline({
 }
 
 /**
- * Recent days as a calendar-shaped grid of rounded squares, tinted by how
- * heavy each day was. A month of logging at a glance, with no numbers.
+ * Recent days as a calendar-shaped grid of dots, tinted by how heavy each day
+ * was. A month of logging at a glance, with no numbers. Circular to match the
+ * day cells on the calendar itself.
  */
 export function HeatGrid({ days, columns = 7 }) {
   const rows = [];
@@ -435,7 +436,9 @@ export function Gauge({ ratio, size = 140, label, caption }) {
 const extra = StyleSheet.create({
   heat: { gap: 6 },
   heatRow: { flexDirection: 'row', gap: 6 },
-  heatCell: { flex: 1, aspectRatio: 1, borderRadius: 7 },
+  // The cell is a flexed square, so its half-width is not knowable here — a
+  // radius past any possible half rounds it to a circle at every screen size.
+  heatCell: { flex: 1, aspectRatio: 1, borderRadius: 999 },
   heatSpacer: { flex: 1, aspectRatio: 1 },
   heatToday: { borderWidth: 1.8, borderColor: colors.ink },
   splitTrack: { flexDirection: 'row', overflow: 'hidden', width: '100%' },

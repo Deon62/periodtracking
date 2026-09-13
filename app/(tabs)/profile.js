@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Image, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useStore } from '../../src/store';
 import { colors } from '../../src/theme';
 import { Icon } from '../../src/icons';
-import { Screen, Text, Row, Hairline } from '../../src/components/ui';
+import { Screen, Text, Hairline } from '../../src/components/ui';
+import { ConfirmDialog } from '../../src/components/ConfirmDialog';
 
 /**
  * A hub, not a form. Everything editable lives on its own page so this screen
@@ -14,31 +15,18 @@ export default function Profile() {
   const router = useRouter();
   const { settings, model, logout } = useStore();
 
-  const confirmLogout = () =>
-    Alert.alert('Log out', 'Your logged data stays on this device.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: logout },
-    ]);
+  const [confirming, setConfirming] = useState(false);
 
   return (
     <Screen scroll={false}>
-      <Row style={styles.top}>
-        <View style={{ flex: 1 }}>
-          <Text weight="medium" style={styles.eyebrow}>
-            PROFILE
-          </Text>
-          <Text weight="bold" style={styles.title}>
-            You
-          </Text>
-        </View>
-        <Pressable
-          onPress={() => router.push('/settings')}
-          hitSlop={12}
-          style={({ pressed }) => [styles.gear, pressed && { opacity: 0.6 }]}
-        >
-          <Icon name="settings" size={20} color={colors.ink} strokeWidth={1.8} />
-        </Pressable>
-      </Row>
+      <View style={styles.top}>
+        <Text weight="medium" style={styles.eyebrow}>
+          PROFILE
+        </Text>
+        <Text weight="bold" style={styles.title}>
+          You
+        </Text>
+      </View>
 
       <View style={styles.identity}>
         <Pressable onPress={() => router.push('/personal')} style={styles.avatarWrap}>
@@ -85,7 +73,7 @@ export default function Profile() {
       <View style={{ flex: 1 }} />
 
       <Pressable
-        onPress={confirmLogout}
+        onPress={() => setConfirming(true)}
         style={({ pressed }) => [styles.logout, pressed && { opacity: 0.6 }]}
       >
         <Icon name="logout" size={17} color={colors.inkSoft} strokeWidth={1.8} />
@@ -93,6 +81,19 @@ export default function Profile() {
           Log out
         </Text>
       </Pressable>
+
+      <ConfirmDialog
+        visible={confirming}
+        icon="logout"
+        title="Log out?"
+        message="Everything you have logged is saved to your account, waiting for you."
+        confirmLabel="Log out"
+        onCancel={() => setConfirming(false)}
+        onConfirm={() => {
+          setConfirming(false);
+          logout();
+        }}
+      />
     </Screen>
   );
 }
@@ -128,14 +129,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: { fontSize: 28, letterSpacing: -0.5 },
-  gear: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.slateTint,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   identity: { alignItems: 'center', marginTop: 30 },
   avatarWrap: { width: 92, height: 92, borderRadius: 46, marginBottom: 14 },
   avatarImage: {

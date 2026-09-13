@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -16,19 +16,16 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 // Long enough to read "Welcome to nimoh" without it turning into a wait.
 const WELCOME_MS = 1600;
 
-const AUTH_ROUTES = ['sign-in', 'sign-up'];
-
+/**
+ * Routes are declared inside guards rather than redirected from an effect.
+ *
+ * The effect version mounted the tab group first and only pushed the sign-in
+ * screen on the next tick, which is why Today flashed up between the splash and
+ * the login page. A guarded screen does not exist while its condition is false,
+ * so there is nothing to render and nothing to flash.
+ */
 function Gate() {
   const { ready, account } = useStore();
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!ready) return;
-    const inAuth = AUTH_ROUTES.includes(segments[0]);
-    if (!account && !inAuth) router.replace('/sign-in');
-    else if (account && inAuth) router.replace('/');
-  }, [ready, account, segments, router]);
 
   if (!ready) return <Splash />;
 
@@ -41,7 +38,19 @@ function Gate() {
           contentStyle: { backgroundColor: colors.white },
           animation: 'fade',
         }}
-      />
+      >
+        <Stack.Protected guard={!account}>
+          <Stack.Screen name="sign-in" />
+          <Stack.Screen name="sign-up" />
+        </Stack.Protected>
+
+        <Stack.Protected guard={!!account}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="log" />
+          <Stack.Screen name="settings" />
+          <Stack.Screen name="personal" />
+        </Stack.Protected>
+      </Stack>
     </>
   );
 }

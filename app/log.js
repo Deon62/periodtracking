@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, StyleSheet, TextInput, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -19,6 +19,8 @@ export default function LogScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { logs, saveLog, model, togglePeriodDay } = useStore();
+
+  const scrollRef = useRef(null);
 
   const dayKey = typeof params.date === 'string' ? params.date : today();
   const existing = logs[dayKey];
@@ -55,7 +57,7 @@ export default function LogScreen() {
   };
 
   return (
-    <Screen contentStyle={{ paddingBottom: 48 }}>
+    <Screen scrollRef={scrollRef} contentStyle={{ paddingBottom: 48 }}>
       <Row style={styles.top}>
         <View style={{ flex: 1 }}>
           <Text weight="medium" style={styles.eyebrow}>
@@ -132,6 +134,11 @@ export default function LogScreen() {
         placeholderTextColor={colors.faint}
         multiline
         style={styles.notes}
+        // The keyboard covers the bottom of the page; the insets alone cannot
+        // move a field that is already the last thing on it.
+        onFocus={() =>
+          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 140)
+        }
       />
 
       <Button label="Save entry" style={{ marginTop: 26 }} onPress={onSave} />

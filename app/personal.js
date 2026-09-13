@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Pressable, TextInput, Image, Alert } from 'react-native';
+import { View, StyleSheet, Pressable, TextInput, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useStore } from '../src/store';
 import { colors, radius, font } from '../src/theme';
 import { Icon } from '../src/icons';
 import { Screen, Text, Row, PageHeader, Section, Hairline } from '../src/components/ui';
+import { ConfirmDialog } from '../src/components/ConfirmDialog';
 
 const GOALS = [
   { id: 'track', label: 'Track my cycle', hint: 'Know what is coming' },
@@ -17,30 +18,45 @@ const THIS_YEAR = new Date().getFullYear();
 
 export default function PersonalDetails() {
   const router = useRouter();
-  const { settings, setSettings } = useStore();
+  const { settings, setSettings, setAvatar, removeAvatar } = useStore();
   const [editingName, setEditingName] = useState(false);
+  const [needsPhotoAccess, setNeedsPhotoAccess] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
 
   const year = settings.birthYear;
   const age = year ? THIS_YEAR - year : null;
 
   const pickPhoto = async () => {
+    if (uploading) return;
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
-      Alert.alert('Photo access needed', 'Allow photo access to choose a picture.');
+      setNeedsPhotoAccess(true);
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      // 0.5 on an already-cropped square keeps the upload small; an avatar is
+      // never shown above 100pt. `base64` is what the upload actually reads.
+      quality: 0.5,
+      base64: true,
     });
-    if (!res.canceled && res.assets?.length) {
-      setSettings({ avatarUri: res.assets[0].uri });
-    }
+    if (res.canceled || !res.assets?.length) return;
+
+    setUploadError('');
+    setUploading(true);
+    const { error } = await setAvatar(res.assets[0]);
+    setUploading(false);
+    if (error) setUploadError('That photo did not upload. Try again.');
   };
 
-  const removePhoto = () => setSettings({ avatarUri: null });
+  const removePhoto = () => {
+    if (uploading) return;
+    setUploadError('');
+    removeAvatar();
+  };
 
   const setYear = (v) => setSettings({ birthYear: Math.min(THIS_YEAR - 8, Math.max(1940, v)) });
 
@@ -63,16 +79,35 @@ export default function PersonalDetails() {
               </Text>
             </View>
           )}
+          {uploading && (
+            <View style={styles.avatarBusy}>
+              <ActivityIndicator color={colors.white} />
+            </View>
+          )}
+
           <View style={styles.avatarBadge}>
             <Icon name="camera" size={14} color={colors.white} strokeWidth={1.9} />
           </View>
         </Pressable>
 
-        <Pressable onPress={settings.avatarUri ? removePhoto : pickPhoto}>
+        <Pressable
+          onPress={settings.avatarUri ? removePhoto : pickPhoto}
+          disabled={uploading}
+        >
           <Text weight="semibold" style={styles.photoAction}>
-            {settings.avatarUri ? 'Remove photo' : 'Add a photo'}
+            {uploading
+              ? 'Uploading…'
+              : settings.avatarUri
+              ? 'Remove photo'
+              : 'Add a photo'}
           </Text>
         </Pressable>
+
+        {!!uploadError && (
+          <Text weight="medium" style={styles.photoError}>
+            {uploadError}
+          </Text>
+        )}
       </View>
 
       <Section title="Name" first>
@@ -155,14 +190,37 @@ export default function PersonalDetails() {
       </Section>
 
       <Text weight="medium" style={styles.note}>
-        Everything here stays on this device and is only used inside the app.
+        Only ever visible to you, and only used inside the app.
       </Text>
+
+      <ConfirmDialog
+        visible={needsPhotoAccess}
+        icon="camera"
+        title="Photo access needed"
+        message="Allow photo access in your settings to choose a picture."
+        confirmLabel="Got it"
+        dismissOnly
+        onCancel={() => setNeedsPhotoAccess(false)}
+        onConfirm={() => setNeedsPhotoAccess(false)}
+      />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   photoBlock: { alignItems: 'center', marginTop: 20 },
+  avatarBusy: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(18,18,24,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoError: { fontSize: 12.5, color: colors.brand, marginTop: 8 },
   avatarWrap: { width: 100, height: 100, borderRadius: 50, marginBottom: 14 },
   avatarImage: {
     width: 100,

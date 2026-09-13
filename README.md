@@ -4,10 +4,26 @@ A minimal period tracker for Android and iOS, built with Expo. Clean white
 canvas, `#FF2A85` as the only brand colour, Quicksand throughout, and a set of
 hand-drawn stroke icons. No emoji anywhere.
 
-Everything logged is stored on the device with AsyncStorage. Sign in and sign
-up are local for now — there is no backend yet, so `signUp`, `signIn` and
-`signInWithGoogle` in `src/store.js` just create a session record. Swap those
-three for real API calls and no screen has to change.
+## Backend
+
+Supabase: auth, Postgres and row level security. `supabase/schema.sql` is the
+whole schema — run it once in the SQL editor. Three tables (`profiles`,
+`periods`, `logs`), each keyed by `auth.uid()` with RLS on, so a row is only
+ever readable by the user it belongs to.
+
+Profile photos go to the `avatars` storage bucket, one folder per user id, with
+the storage policies keyed off that folder so nobody can write outside her own.
+
+`src/supabase.js` creates the client (session in `expo-sqlite` storage, token
+refresh tied to app foreground); `src/api.js` is every query in one place;
+`src/store.js` holds the working copy, writes through optimistically and keeps a
+per-user AsyncStorage cache so the app opens with data rather than a blank
+screen while the network answers.
+
+The project URL and publishable key sit at the top of `src/supabase.js`. No
+`.env`: those two values are designed to ship inside the app, and the RLS
+policies are what keep the data private. The database password and the
+`postgresql://` string are not, and are not in this repo.
 
 ## Running it
 
