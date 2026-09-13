@@ -44,6 +44,10 @@ Scan the QR code with **Expo Go** on Android or iOS.
 | Insights | Chart-led and near wordless: phase donut, regularity gauge, cycle-length sparkline, a four-week flow heat grid, a mood split bar and symptom bubbles; stats and upcoming periods sit behind "More detail" |
 | You      | A hub that never scrolls: profile photo, name, links to Personal details and Settings, and log out |
 
+**Notifications** is reached from the bell on Today and currently renders mock
+data from `src/notifications.js` — the shape matches what a real feed needs, so
+swapping the array for a table is a change of source, not of screen.
+
 Two further pages sit outside the tabs: **Personal details** (photo, name, birth
 year, what you are tracking for) and **Settings** (cycle lengths, reminders,
 privacy, delete all data).
@@ -80,9 +84,13 @@ floating tab bar.
 Icons are drawn by hand in `src/icons.js` as `react-native-svg` paths on a 24x24
 grid, so nothing depends on an icon font and there is no emoji anywhere.
 
-The app icon, adaptive icon and in-app mark are generated from `assets/logo.png`
-— the monogram, cropped away from the wordmark, which stays legible at small
-sizes. `assets/google.svg` is imported directly as a component via
+Every icon asset is generated from `assets/icon.png` by `scripts/build-icons.py`
+— run it again whenever the logo changes. Each target crops differently, which
+is why one file cannot serve them all: iOS shows the whole square, so the lockup
+gets 80% of it; Android adaptive icons are masked to a circle or squircle with
+only the middle 66% guaranteed, so the foreground is held inside a 62% safe zone
+and the "nimoh" wordmark survives the crop; the splash and in-app mark use the
+symbol alone, since the screen already says the name underneath. `assets/google.svg` is imported directly as a component via
 `react-native-svg-transformer`, configured in `metro.config.js`.
 
 ## How predictions work

@@ -89,13 +89,25 @@ export async function signInWithGoogle() {
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
   if (result.type !== 'success') return { cancelled: true };
 
-  // Supabase returns the tokens in the URL fragment.
-  const fragment = result.url.split('#')[1] || '';
-  const params = new URLSearchParams(fragment);
-  const access_token = params.get('access_token');
-  const refresh_token = params.get('refresh_token');
+  // The callback can come back three ways, so read both halves of the URL
+  // rather than assuming one: tokens in the fragment (the implicit flow, which
+  // is what supabase-js uses by default), a code in the query (pkce), or an
+  // error in the query when consent was refused.
+  const [base, fragment = ''] = result.url.split('#');
+  const query = new URLSearchParams(base.split('?')[1] || '');
+  const hash = new URLSearchParams(fragment);
+  const describe = (p) => p.get('error_description') || p.get('error');
+
+  const failure = describe(query) || describe(hash);
+  if (failure) return { error: new Error(failure) };
+
+  const code = query.get('code');
+  if (code) return supabase.auth.exchangeCodeForSession(code);
+
+  const access_token = hash.get('access_token');
+  const refresh_token = hash.get('refresh_token');
   if (!access_token || !refresh_token) {
-    return { error: new Error(params.get('error_description') || 'Google sign in failed.') };
+    return { error: new Error('Google sign in did not return a session.') };
   }
 
   return supabase.auth.setSession({ access_token, refresh_token });
@@ -134,16 +146,23 @@ export async function fetchAll(userId) {
 // Writes
 // ---------------------------------------------------------------------------
 
-export function saveProfile(userId, patch) {
+// Every write below is `async` on purpose. A Postgrest query builder is a
+// thenable, not a Promise: it has `then` but no `catch`, so returning one
+// directly means any caller that writes `.catch(...)` — which is every
+// fire-and-forget write in the store — dies on "undefined is not a function".
+// Marking these async wraps the builder in a real Promise at the boundary.
+
+export async function saveProfile(userId, patch) {
   const columns = profilePatch(patch);
-  if (!Object.keys(columns).length) return Promise.resolve({ error: null });
+  if (!Object.keys(columns).length) return { error: null };
   return supabase.from('profiles').update(columns).eq('id', userId);
 }
 
-export const saveTourSeen = (userId, seen) =>
-  supabase.from('profiles').update({ tour_seen: seen }).eq('id', userId);
+export async function saveTourSeen(userId, seen) {
+  return supabase.from('profiles').update({ tour_seen: seen }).eq('id', userId);
+}
 
-export function upsertLog(userId, date, log) {
+export async function upsertLog(userId, date, log) {
   return supabase.from('logs').upsert(
     {
       user_id: userId,
@@ -158,8 +177,9 @@ export function upsertLog(userId, date, log) {
   );
 }
 
-export const deleteLog = (userId, date) =>
-  supabase.from('logs').delete().eq('user_id', userId).eq('log_date', date);
+export async function deleteLog(userId, date) {
+  return supabase.from('logs').delete().eq('user_id', userId).eq('log_date', date);
+}
 
 /**
  * Periods are edited as a whole array by the toggle logic, so the cheapest

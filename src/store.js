@@ -328,7 +328,7 @@ export function StoreProvider({ children }) {
       const id = userRef.current;
       if (!id) return;
       const write = empty ? api.deleteLog(id, key) : api.upsertLog(id, key, merged);
-      Promise.resolve(write).catch(() => {});
+      write.catch(() => {});
     },
     [commit]
   );

@@ -77,16 +77,23 @@ export default function CalendarScreen() {
               const hasLog = !!logs[key];
               return (
                 <Pressable key={key} style={styles.cell} onPress={() => setSelected(key)}>
-                  <View
-                    style={[
-                      styles.day,
-                      status === 'period' && styles.dayPeriod,
-                      status === 'predicted' && styles.dayPredicted,
-                      status === 'fertile' && styles.dayFertile,
-                      status === 'ovulation' && styles.dayOvulation,
-                      isToday && styles.dayToday,
-                    ]}
-                  >
+                  <View style={styles.day}>
+                    {/* The coloured shape is its own childless layer rather
+                        than the background of the box holding the number.
+                        Android was painting that background as a square and
+                        dropping the radius; the legend swatches, which are
+                        childless views with the very same styles, were round
+                        throughout. Same fill, same styles, nothing on top. */}
+                    <View
+                      style={[
+                        styles.dayFill,
+                        status === 'period' && styles.dayPeriod,
+                        status === 'predicted' && styles.dayPredicted,
+                        status === 'fertile' && styles.dayFertile,
+                        status === 'ovulation' && styles.dayOvulation,
+                        isToday && styles.dayToday,
+                      ]}
+                    />
                     <Text
                       weight={isToday || status === 'period' ? 'bold' : 'medium'}
                       style={[
@@ -212,6 +219,7 @@ function label(list, id) {
 }
 
 const CELL = `${100 / 7}%`;
+const DAY = 38;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.white },
@@ -255,11 +263,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   day: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: DAY,
+    height: DAY,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Half of DAY, so the two can never drift apart into a squircle.
+  dayFill: {
+    ...absoluteFill,
+    borderRadius: DAY / 2,
   },
   dayText: { fontSize: 14, color: colors.ink },
   dayPeriod: { backgroundColor: colors.brand },

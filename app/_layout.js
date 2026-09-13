@@ -47,6 +47,7 @@ function Gate() {
         <Stack.Protected guard={!!account}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="log" />
+          <Stack.Screen name="notifications" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="personal" />
         </Stack.Protected>

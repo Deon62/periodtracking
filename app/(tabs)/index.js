@@ -8,6 +8,7 @@ import { Icon } from '../../src/icons';
 import { Text, Button, Row } from '../../src/components/ui';
 import { CycleRing } from '../../src/components/CycleRing';
 import { today, longDate, prettyDate, daysBetween } from '../../src/cycle';
+import { unreadCount } from '../../src/notifications';
 
 function greeting() {
   const h = new Date().getHours();
@@ -69,6 +70,8 @@ export default function Today() {
     };
   }, [model, key]);
 
+  const unread = unreadCount();
+
   const loggedCount =
     (log?.symptoms?.length || 0) + (log?.moods?.length || 0) + (log?.flow ? 1 : 0);
 
@@ -79,15 +82,32 @@ export default function Today() {
         { paddingTop: insets.top + 10, paddingBottom: insets.bottom + 92 },
       ]}
     >
-      <View>
-        <Text weight="medium" style={styles.date}>
-          {longDate(key).toUpperCase()}
-        </Text>
-        <Text weight="bold" style={styles.greeting}>
-          {greeting()}
-          {settings.name ? `, ${settings.name}` : ''}
-        </Text>
-      </View>
+      <Row style={{ alignItems: 'flex-start' }}>
+        <View style={{ flex: 1 }}>
+          <Text weight="medium" style={styles.date}>
+            {longDate(key).toUpperCase()}
+          </Text>
+          <Text weight="bold" style={styles.greeting}>
+            {greeting()}
+            {settings.name ? `, ${settings.name}` : ''}
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={() => router.push('/notifications')}
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel={
+            unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'
+          }
+          style={({ pressed }) => [styles.bell, pressed && { opacity: 0.6 }]}
+        >
+          <Icon name="bell" size={20} color={colors.ink} strokeWidth={1.8} />
+          {/* A dot, not a count: the number is never the point, and it keeps
+              the bell from growing a second shape at small sizes. */}
+          {unread > 0 && <View style={styles.bellDot} />}
+        </Pressable>
+      </Row>
 
       <View style={styles.ringBlock}>
         <CycleRing
@@ -185,6 +205,25 @@ const styles = StyleSheet.create({
   greeting: {
     fontSize: 25,
     letterSpacing: -0.4,
+  },
+  bell: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.slateTint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 8,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.brand,
+    borderWidth: 2,
+    borderColor: colors.slateTint,
   },
   ringBlock: {
     alignItems: 'center',
