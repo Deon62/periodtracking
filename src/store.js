@@ -10,7 +10,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import * as api from './api';
-import { analyse, today, addDays, daysBetween } from './cycle';
+import { analyse, today, addDays, daysBetween, periodFor, periodEndingAt } from './cycle';
 
 export const FLOWS = [
   { id: 'spotting', label: 'Spotting', drops: 1 },
@@ -334,6 +334,30 @@ export function StoreProvider({ children }) {
     [commit, write]
   );
 
+  /**
+   * Records the day a period finished.
+   *
+   * Until now the end was only ever inferred from the average length in
+   * Settings, which is a reasonable guess and nothing more — if she says it ran
+   * the 18th to the 22nd, the app should store that, not five days because five
+   * is the default. Extends or trims the run to land exactly on `key`.
+   */
+  const setPeriodEnd = useCallback(
+    (key) => {
+      const s = stateRef.current;
+      const target = periodEndingAt(s.periods, key) || periodFor(s.periods, key, s.settings.periodLength)?.period;
+      if (!target) return;
+
+      const before = s.periods;
+      const periods = before.map((p) => (p.start === target.start ? { ...p, end: key } : p));
+      commit({ ...s, periods });
+
+      const id = userRef.current;
+      if (id) write(api.syncPeriods(id, before, periods), 'that period');
+    },
+    [commit, write]
+  );
+
   // --- logs ----------------------------------------------------------------
 
   const saveLog = useCallback(
@@ -405,6 +429,7 @@ export function StoreProvider({ children }) {
       completeTour,
       replayTour,
       togglePeriodDay,
+      setPeriodEnd,
       saveLog,
       clearAll,
       logout,
@@ -425,6 +450,7 @@ export function StoreProvider({ children }) {
       completeTour,
       replayTour,
       togglePeriodDay,
+      setPeriodEnd,
       saveLog,
       clearAll,
       logout,

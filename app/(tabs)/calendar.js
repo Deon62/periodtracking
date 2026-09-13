@@ -17,13 +17,14 @@ import {
   longDate,
   dayStatus,
   fromKey,
+  periodEndingAt,
 } from '../../src/cycle';
 
 const WEEK = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const { model, logs, togglePeriodDay } = useStore();
+  const { model, logs, togglePeriodDay, setPeriodEnd } = useStore();
   const [month, setMonth] = useState(startOfMonth(today()));
   const [selected, setSelected] = useState(null);
 
@@ -72,7 +73,19 @@ export default function CalendarScreen() {
           <View style={styles.grid}>
             {cells.map((key, i) => {
               if (!key) return <View key={`e${i}`} style={styles.cell} />;
-              const status = dayStatus(key, model).type;
+              const day = dayStatus(key, model);
+              const status = day.type;
+              // The first day is the one she actually reported, so it carries
+              // the solid fill. The rest are softer, and days we are only
+              // assuming (no end recorded yet) are dotted to say so.
+              const periodStyle =
+                status !== 'period'
+                  ? null
+                  : day.edge === 'start' || day.edge === 'only'
+                  ? styles.dayPeriod
+                  : day.recorded
+                  ? styles.dayPeriodOn
+                  : styles.dayPeriodAssumed;
               const isToday = key === now;
               const hasLog = !!logs[key];
               return (
@@ -87,7 +100,7 @@ export default function CalendarScreen() {
                     <View
                       style={[
                         styles.dayFill,
-                        status === 'period' && styles.dayPeriod,
+                        periodStyle,
                         status === 'predicted' && styles.dayPredicted,
                         status === 'fertile' && styles.dayFertile,
                         status === 'ovulation' && styles.dayOvulation,
@@ -98,7 +111,11 @@ export default function CalendarScreen() {
                       weight={isToday || status === 'period' ? 'bold' : 'medium'}
                       style={[
                         styles.dayText,
-                        status === 'period' && { color: colors.white },
+                        status === 'period' && { color: colors.brandDeep },
+                        status === 'period' &&
+                          (day.edge === 'start' || day.edge === 'only') && {
+                            color: colors.white,
+                          },
                         status === 'ovulation' && { color: colors.teal },
                         status === 'predicted' && { color: colors.brandDeep },
                       ]}
@@ -114,7 +131,9 @@ export default function CalendarScreen() {
         </View>
 
         <View style={styles.legend}>
-          <Legend swatch={styles.dayPeriod} label="Period" />
+          <Legend swatch={styles.dayPeriod} label="Period starts" />
+          <Legend swatch={styles.dayPeriodOn} label="Period days" />
+          <Legend swatch={styles.dayPeriodAssumed} label="Assumed" />
           <Legend swatch={styles.dayPredicted} label="Predicted" />
           <Legend swatch={styles.dayFertile} label="Fertile window" />
           <Legend swatch={styles.dayOvulation} label="Ovulation" />
@@ -131,7 +150,9 @@ export default function CalendarScreen() {
         onClose={() => setSelected(null)}
         model={model}
         log={selected ? logs[selected] : null}
+        periods={model.periods}
         onToggle={() => togglePeriodDay(selected)}
+        onSetEnd={() => setPeriodEnd(selected)}
         onEdit={() => {
           const k = selected;
           setSelected(null);
@@ -153,16 +174,28 @@ function Legend({ swatch, label }) {
   );
 }
 
-function DaySheet({ dayKey, onClose, model, log, onToggle, onEdit }) {
+function DaySheet({ dayKey, onClose, model, log, periods, onToggle, onSetEnd, onEdit }) {
   if (!dayKey) return null;
-  const status = dayStatus(dayKey, model).type;
-  const statusText = {
-    period: 'Period day',
-    predicted: 'Predicted period',
-    fertile: 'Fertile window',
-    ovulation: 'Estimated ovulation',
-    none: 'No cycle events',
-  }[status];
+  const day = dayStatus(dayKey, model);
+  const status = day.type;
+
+  const statusText =
+    status === 'period'
+      ? `Period · day ${day.dayOfPeriod}${
+          day.recorded ? ` of ${day.length}` : ', end not set'
+        }`
+      : {
+          predicted: 'Predicted period',
+          fertile: 'Fertile window',
+          ovulation: 'Estimated ovulation',
+          none: 'No cycle events',
+        }[status];
+
+  // Offering "ended here" only makes sense when there is a run for it to close:
+  // either this day is inside one, or one started recently enough before it.
+  const openRun =
+    status === 'period' ? day.start : periodEndingAt(periods || [], dayKey)?.start || null;
+  const canSetEnd = !!openRun && !(status === 'period' && day.recorded && day.edge === 'end');
 
   const entries = [
     log?.flow && `Flow: ${log.flow}`,
@@ -199,10 +232,20 @@ function DaySheet({ dayKey, onClose, model, log, onToggle, onEdit }) {
           </View>
         )}
 
+        {canSetEnd && (
+          <Button
+            label="My period ended here"
+            style={{ marginTop: 20 }}
+            onPress={() => {
+              onSetEnd();
+              onClose();
+            }}
+          />
+        )}
         <Button
           label={status === 'period' ? 'Remove period day' : 'Mark as period day'}
-          variant={status === 'period' ? 'outline' : 'primary'}
-          style={{ marginTop: 20 }}
+          variant={status === 'period' || canSetEnd ? 'outline' : 'primary'}
+          style={{ marginTop: canSetEnd ? 10 : 20 }}
           onPress={() => {
             onToggle();
             onClose();
@@ -275,6 +318,13 @@ const styles = StyleSheet.create({
   },
   dayText: { fontSize: 14, color: colors.ink },
   dayPeriod: { backgroundColor: colors.brand },
+  dayPeriodOn: { backgroundColor: colors.brandSoft },
+  dayPeriodAssumed: {
+    backgroundColor: colors.brandTint,
+    borderWidth: 1.4,
+    borderColor: colors.brandLight,
+    borderStyle: 'dotted',
+  },
   dayPredicted: {
     borderWidth: 1.4,
     borderColor: colors.brand,

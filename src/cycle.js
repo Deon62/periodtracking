@@ -229,11 +229,34 @@ export function analyse(periods, settings, ref = today()) {
  * True when `key` falls inside a logged period. Open-ended periods are assumed
  * to run for the user's average length.
  */
-export function isPeriodDay(periods, key, avgPeriod) {
-  return periods.some((p) => {
+export function periodFor(periods, key, avgPeriod) {
+  for (const p of periods) {
+    // A period with no recorded end is assumed to run for the usual length —
+    // but the caller is told which it is, because a guess should not be drawn
+    // as confidently as a day she actually told us about.
+    const recorded = !!p.end;
     const end = p.end || addDays(p.start, avgPeriod - 1);
-    return key >= p.start && key <= end;
-  });
+    if (key >= p.start && key <= end) return { period: p, end, recorded };
+  }
+  return null;
+}
+
+export function isPeriodDay(periods, key, avgPeriod) {
+  return !!periodFor(periods, key, avgPeriod);
+}
+
+/**
+ * The period a day could be the end of: the most recent one starting before it,
+ * as long as nothing else has started in between and the result stays a
+ * plausible length. Used to offer "period ended here" on a day not yet covered.
+ */
+export function periodEndingAt(periods, key, maxLength = 14) {
+  const before = periods.filter((p) => p.start < key).sort((a, b) => (a.start < b.start ? -1 : 1));
+  const candidate = before[before.length - 1];
+  if (!candidate) return null;
+  if (periods.some((p) => p.start > candidate.start && p.start <= key)) return null;
+  if (daysBetween(candidate.start, key) + 1 > maxLength) return null;
+  return candidate;
 }
 
 /**
@@ -242,8 +265,21 @@ export function isPeriodDay(periods, key, avgPeriod) {
 export function dayStatus(key, model) {
   if (!model.hasData) return { type: 'none' };
 
-  if (isPeriodDay(model.periods, key, model.avgPeriod)) {
-    return { type: 'period' };
+  const match = periodFor(model.periods, key, model.avgPeriod);
+  if (match) {
+    const { period, end, recorded } = match;
+    return {
+      type: 'period',
+      // Where in the run this day sits, so the calendar can draw the shape of
+      // the period rather than five identical blobs.
+      edge:
+        period.start === end ? 'only' : key === period.start ? 'start' : key === end ? 'end' : 'middle',
+      recorded,
+      start: period.start,
+      end,
+      dayOfPeriod: daysBetween(period.start, key) + 1,
+      length: daysBetween(period.start, end) + 1,
+    };
   }
 
   for (const p of model.upcoming) {

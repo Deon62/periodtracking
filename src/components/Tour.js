@@ -28,7 +28,7 @@ const STEPS = [
   {
     icon: 'droplet',
     title: 'Mark day one',
-    body: 'The day it arrives, tap Period started today. Tap it again on the day it ends.',
+    body: 'Tap Period started today when it arrives. On the calendar, tap the last day and choose My period ended here.',
   },
   {
     icon: 'calendar',
