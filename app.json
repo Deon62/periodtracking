@@ -18,7 +18,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "co.ardena.nimoh",
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,7 +47,22 @@
         }
       ],
       "expo-sqlite",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableBundleCompression": true,
+            "enablePngCrunchInReleaseBuilds": true,
+            "extraProguardRules": "# Hermes and the RN bridge reach these reflectively.\n-keep class com.facebook.hermes.unicode.** { *; }\n-keep class com.facebook.jni.** { *; }\n\n# OkHttp ships optional Conscrypt/Animal-Sniffer references.\n-dontwarn okhttp3.internal.platform.**\n-dontwarn org.conscrypt.**\n-dontwarn org.bouncycastle.**\n-dontwarn org.openjsse.**\n\n# Strip the diagnostic logging from the shipped build.\n-assumenosideeffects class android.util.Log {\n    public static int d(...);\n    public static int v(...);\n}"
+          },
+          "ios": {
+            "ccacheEnabled": true
+          }
+        }
+      ]
     ],
     "scheme": "nimoh",
     "backgroundColor": "#121218"
