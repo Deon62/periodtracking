@@ -131,7 +131,7 @@ export function PageHeader({ title, subtitle, onBack, right }) {
           hitSlop={12}
           style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.6 }]}
         >
-          <Icon name="chevronLeft" size={19} color={colors.ink} strokeWidth={2} />
+          <Icon name="arrowLeft" size={19} color={colors.ink} strokeWidth={2} />
         </Pressable>
         {right}
       </Row>

@@ -7,7 +7,6 @@ import { colors } from '../../src/theme';
 import { Icon } from '../../src/icons';
 import { Text, Button, Row } from '../../src/components/ui';
 import { CycleRing } from '../../src/components/CycleRing';
-import { Fab } from '../../src/components/Fab';
 import { today, longDate, prettyDate, daysBetween } from '../../src/cycle';
 
 function greeting() {
@@ -133,16 +132,26 @@ export default function Today() {
           onPress={() => togglePeriodDay(key)}
         />
 
-        <Pressable onPress={() => router.push('/log')} style={styles.logLink}>
-          <Text weight="medium" style={styles.logLinkText}>
-            {loggedCount > 0
-              ? `${loggedCount} logged today`
-              : 'Nothing logged today'}
-          </Text>
-        </Pressable>
+        {/* Before anything is tracked, the useful link is the one that says
+            where to mark a start date that was not today. Same height either
+            way, so the no-scroll budget above still holds. */}
+        {model.hasData ? (
+          <Pressable onPress={() => router.push('/log')} style={styles.logLink}>
+            <Text weight="medium" style={styles.logLinkText}>
+              {loggedCount > 0 ? `${loggedCount} logged today` : 'Nothing logged today'}
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable onPress={() => router.push('/calendar')} style={styles.logLink}>
+            <Text weight="medium" style={styles.logLinkText}>
+              Started on another day?{' '}
+              <Text weight="semibold" style={styles.logLinkAction}>
+                Pick it on the calendar
+              </Text>
+            </Text>
+          </Pressable>
+        )}
       </View>
-
-      <Fab label="Add an entry" onPress={() => router.push('/log')} />
     </View>
   );
 }
@@ -226,4 +235,5 @@ const styles = StyleSheet.create({
     fontSize: 12.5,
     color: colors.muted,
   },
+  logLinkAction: { color: colors.brand },
 });

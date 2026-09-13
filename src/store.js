@@ -36,7 +36,13 @@ export const SYMPTOMS = [
 ];
 
 const DEFAULT_STATE = {
-  onboarded: false,
+  // Null until somebody signs in. There is no server yet, so this is a local
+  // session record: { name, email, provider }. Swap the three actions below for
+  // real API calls and nothing else on any screen has to change.
+  account: null,
+  // The walkthrough runs once per device, not once per sign-in — signing out
+  // and back in should not replay it.
+  tourSeen: false,
   settings: {
     name: '',
     avatarUri: null,
@@ -93,15 +99,38 @@ export function StoreProvider({ children }) {
     [update]
   );
 
-  const completeOnboarding = useCallback(
-    ({ name, cycleLength, periodLength, lastPeriodStart }) =>
+  /**
+   * Creates the session. Cycle length, period length and the last period start
+   * are deliberately not asked for here — they default, and Settings, Personal
+   * details and the calendar let her correct them whenever she gets to it.
+   *
+   * The password is checked for shape and then dropped: keeping one on the
+   * device would be security theatre, and a real backend will own it.
+   */
+  const signUp = useCallback(
+    ({ name, email }) =>
       update((s) => ({
         ...s,
-        onboarded: true,
-        settings: { ...s.settings, name, cycleLength, periodLength },
-        periods: lastPeriodStart
-          ? [{ start: lastPeriodStart, end: addDays(lastPeriodStart, periodLength - 1) }]
-          : s.periods,
+        account: { name: name.trim(), email: email.trim(), provider: 'password' },
+        settings: { ...s.settings, name: name.trim() || s.settings.name },
+      })),
+    [update]
+  );
+
+  const signIn = useCallback(
+    ({ email }) =>
+      update((s) => ({
+        ...s,
+        account: { name: s.settings.name, email: email.trim(), provider: 'password' },
+      })),
+    [update]
+  );
+
+  const signInWithGoogle = useCallback(
+    () =>
+      update((s) => ({
+        ...s,
+        account: { name: s.settings.name, email: '', provider: 'google' },
       })),
     [update]
   );
@@ -173,13 +202,20 @@ export function StoreProvider({ children }) {
     [update]
   );
 
-  const clearAll = useCallback(() => setState({ ...DEFAULT_STATE, onboarded: true }), []);
+  const completeTour = useCallback(() => update((s) => ({ ...s, tourSeen: true })), [update]);
+  const replayTour = useCallback(() => update((s) => ({ ...s, tourSeen: false })), [update]);
+
+  /** Wipes the logged data but leaves her signed in. */
+  const clearAll = useCallback(
+    () => setState((s) => ({ ...DEFAULT_STATE, account: s.account, tourSeen: s.tourSeen })),
+    []
+  );
 
   /**
-   * Signing out returns to the welcome flow but keeps what has been logged, so
-   * coming back does not mean starting the cycle history from scratch.
+   * Signing out drops the session but keeps what has been logged, so coming
+   * back does not mean starting the cycle history from scratch.
    */
-  const logout = useCallback(() => update((s) => ({ ...s, onboarded: false })), [update]);
+  const logout = useCallback(() => update((s) => ({ ...s, account: null })), [update]);
 
   const model = useMemo(
     () => analyse(state.periods, state.settings, today()),
@@ -192,13 +228,31 @@ export function StoreProvider({ children }) {
       ...state,
       model,
       setSettings,
-      completeOnboarding,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      completeTour,
+      replayTour,
       togglePeriodDay,
       saveLog,
       clearAll,
       logout,
     }),
-    [ready, state, model, setSettings, completeOnboarding, togglePeriodDay, saveLog, clearAll, logout]
+    [
+      ready,
+      state,
+      model,
+      setSettings,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      completeTour,
+      replayTour,
+      togglePeriodDay,
+      saveLog,
+      clearAll,
+      logout,
+    ]
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

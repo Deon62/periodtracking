@@ -1,14 +1,14 @@
 {
   "expo": {
-    "name": "Amani Nimoh",
-    "slug": "amani-nimoh",
+    "name": "nimoh",
+    "slug": "nimoh",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.amaninimoh.cycle"
+      "bundleIdentifier": "co.ardena.nimoh"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +17,7 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.amaninimoh.cycle"
+      "package": "co.ardena.nimoh"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -31,7 +31,7 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#121218"
         }
       ],
       [
@@ -41,7 +41,7 @@
         }
       ]
     ],
-    "scheme": "amaninimoh",
-    "backgroundColor": "#FFFFFF"
+    "scheme": "nimoh",
+    "backgroundColor": "#121218"
   }
 }

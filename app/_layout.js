@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -13,28 +13,36 @@ import { colors } from '../src/theme';
 // there is no white flash between it and the first screen.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
+// Long enough to read "Welcome to nimoh" without it turning into a wait.
+const WELCOME_MS = 1600;
+
+const AUTH_ROUTES = ['sign-in', 'sign-up'];
+
 function Gate() {
-  const { ready, onboarded } = useStore();
+  const { ready, account } = useStore();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (!ready) return;
-    const inOnboarding = segments[0] === 'onboarding';
-    if (!onboarded && !inOnboarding) router.replace('/onboarding');
-    else if (onboarded && inOnboarding) router.replace('/');
-  }, [ready, onboarded, segments, router]);
+    const inAuth = AUTH_ROUTES.includes(segments[0]);
+    if (!account && !inAuth) router.replace('/sign-in');
+    else if (account && inAuth) router.replace('/');
+  }, [ready, account, segments, router]);
 
   if (!ready) return <Splash />;
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.white },
-        animation: 'fade',
-      }}
-    />
+    <>
+      <StatusBar style="dark" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.white },
+          animation: 'fade',
+        }}
+      />
+    </>
   );
 }
 
@@ -46,17 +54,24 @@ export default function RootLayout() {
     Quicksand_700Bold: require('../assets/fonts/Quicksand_700Bold.ttf'),
   });
 
+  // Fonts usually resolve in a few frames, which would flash the welcome rather
+  // than show it. Hold it for a beat regardless of how fast the load was.
+  const [welcomeDone, setWelcomeDone] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWelcomeDone(true), WELCOME_MS);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     if (loaded) SplashScreen.hideAsync().catch(() => {});
   }, [loaded]);
 
-  if (!loaded) return <Splash />;
+  if (!loaded || !welcomeDone) return <Splash />;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StoreProvider>
-          <StatusBar style="dark" />
           <Gate />
         </StoreProvider>
       </SafeAreaProvider>

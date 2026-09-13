@@ -86,6 +86,14 @@ const paths = {
       <Path d="M4.2 20.4c1.6-3.9 4.4-7 8.2-9" {...p} />
     </>
   ),
+  // A back control reads as an arrow, not a lone chevron — the shaft is what
+  // makes the direction obvious at 19px.
+  arrowLeft: (p) => (
+    <>
+      <Line x1="19.4" y1="12" x2="5.2" y2="12" {...p} />
+      <Path d="M11.2 5.6 4.8 12l6.4 6.4" {...p} />
+    </>
+  ),
   chevronLeft: (p) => <Path d="M14.6 5.4 8 12l6.6 6.6" {...p} />,
   chevronRight: (p) => <Path d="M9.4 5.4 16 12l-6.6 6.6" {...p} />,
   chevronDown: (p) => <Path d="M5.4 9.4 12 16l6.6-6.6" {...p} />,

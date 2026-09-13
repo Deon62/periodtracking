@@ -1,11 +1,13 @@
-# Amani Nimoh
+# nimoh
 
 A minimal period tracker for Android and iOS, built with Expo. Clean white
 canvas, `#FF2A85` as the only brand colour, Quicksand throughout, and a set of
 hand-drawn stroke icons. No emoji anywhere.
 
-Everything is stored on the device with AsyncStorage. There is no account, no
-network call, and nothing leaves the phone.
+Everything logged is stored on the device with AsyncStorage. Sign in and sign
+up are local for now — there is no backend yet, so `signUp`, `signIn` and
+`signInWithGoogle` in `src/store.js` just create a session record. Swap those
+three for real API calls and no screen has to change.
 
 ## Running it
 
@@ -20,20 +22,26 @@ Scan the QR code with **Expo Go** on Android or iOS.
 
 | Screen   | What it does |
 | -------- | ------------ |
-| Today    | Fits one screen with no scrolling: cycle ring, current phase, three key figures, one-tap period start/stop, and a link into today's log |
-| Calendar | Month grid with period, predicted period, fertile window and ovulation; tap any day for a detail sheet to mark a period day or edit its log |
+| Today    | Fits one screen with no scrolling: cycle ring, current phase, three key figures, one-tap period start/stop, and a link into today's log — or, before anything is tracked, into the calendar |
+| Calendar | Month grid with period, predicted period, fertile window and ovulation; tap any day for a detail sheet to mark a period day or edit its log. The floating add button lives here |
 | Log      | Reached from the floating add button or a calendar day; flow, mood and symptoms are collapsed dropdowns, plus water and free-text notes |
-| Insights | A donut of the average cycle, a regularity read, and a six-cycle bar chart; stats, symptom ranking and upcoming periods sit behind "More detail" |
-| You      | A hub that never scrolls: profile photo, name, three figures, links to Personal details and Settings, and log out |
+| Insights | Chart-led and near wordless: phase donut, regularity gauge, cycle-length sparkline, a four-week flow heat grid, a mood split bar and symptom bubbles; stats and upcoming periods sit behind "More detail" |
+| You      | A hub that never scrolls: profile photo, name, links to Personal details and Settings, and log out |
 
 Two further pages sit outside the tabs: **Personal details** (photo, name, birth
 year, what you are tracking for) and **Settings** (cycle lengths, reminders,
 privacy, delete all data).
 
-A four-step onboarding runs once and seeds the first period. On launch the
-native splash hands over to `src/components/Splash.js` — the mark centred on
-white — which renders *in place of* the app while fonts and saved data load, and
-unmounts once ready.
+**Sign in** and **Sign up** share one component (`src/components/AuthForm.js`)
+and ask for nothing but a name, an email and a password — plus *Continue with
+Google*. None of the cycle setup happens there: cycle and period length default
+to 28 and 5 and are edited in Settings, name and birth year in Personal details,
+and the first period start is one tap on Today or on any calendar day.
+
+On launch the native splash hands over to `src/components/Splash.js` — the mark
+and *Welcome to nimoh* centred on `#121218`, the same colour as the native
+splash so the handover is invisible. It renders *in place of* the app while
+fonts and saved data load, and is held for 1.6s so it can actually be read.
 
 ## Design
 
@@ -42,8 +50,12 @@ period itself on the calendar and the ring. Selected states, chart fills and
 quiet backgrounds use a neutral slate ramp, and the floating add button is dark
 rather than pink so it reads as a control, not a highlight.
 
-Navigation is four tabs; adding an entry is a floating button on Today rather
-than a fifth tab.
+Navigation is four tabs; adding an entry is a floating button on Calendar
+rather than a fifth tab — an entry belongs to a day, so it sits with the days.
+
+A five-card walkthrough (`src/components/Tour.js`) runs once on first launch and
+answers the questions a new user actually has, starting with where to mark the
+day a period began. It is replayable from Settings › Help.
 
 Content sits flat on white: quiet section labels, hairline rules, and generous
 space instead of cards and borders. The only elevated surface in the app is the
@@ -53,8 +65,9 @@ Icons are drawn by hand in `src/icons.js` as `react-native-svg` paths on a 24x24
 grid, so nothing depends on an icon font and there is no emoji anywhere.
 
 The app icon, adaptive icon and in-app mark are generated from `assets/logo.png`
-— the AN monogram, cropped away from the wordmark, which stays legible at small
-sizes.
+— the monogram, cropped away from the wordmark, which stays legible at small
+sizes. `assets/google.svg` is imported directly as a component via
+`react-native-svg-transformer`, configured in `metro.config.js`.
 
 ## How predictions work
 
@@ -78,8 +91,9 @@ Predictions are estimates. The app is not a contraceptive or a medical device.
 
 ```
 app/
-  _layout.js          font loading, store provider, onboarding gate
-  onboarding.js       first-run setup
+  _layout.js          font loading, store provider, splash hold, auth gate
+  sign-in.js          Sign in
+  sign-up.js          Sign up
   (tabs)/
     _layout.js        tab navigator with the custom bar
     index.js          Today
@@ -95,10 +109,12 @@ src/
   components/
     ui.js             Text, Screen, Section, Button, list rows, SeeMore
     CycleRing.js      the progress ring on Today
-    Charts.js         donut and mini bar chart
+    Charts.js         donut, bars, sparkline, heat grid, split bar, bubbles, gauge
     Dropdown.js       the collapsed selects on the log screen
     TabBar.js         the floating bottom bar
     Fab.js            the floating add button
+    AuthForm.js       sign in / sign up, shared
+    Tour.js           the first-run walkthrough
     Splash.js         the launch screen
 ```
 

@@ -1,5 +1,5 @@
 {
-  "name": "amani-nimoh",
+  "name": "nimoh",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
@@ -30,5 +30,8 @@
   "private": true,
   "overrides": {
     "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "react-native-svg-transformer": "^1.5.3"
   }
 }

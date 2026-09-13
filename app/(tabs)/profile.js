@@ -12,9 +12,7 @@ import { Screen, Text, Row, Hairline } from '../../src/components/ui';
  */
 export default function Profile() {
   const router = useRouter();
-  const { settings, model, logs, logout } = useStore();
-
-  const entryCount = Object.keys(logs).length;
+  const { settings, model, logout } = useStore();
 
   const confirmLogout = () =>
     Alert.alert('Log out', 'Your logged data stays on this device.', [
@@ -68,14 +66,6 @@ export default function Profile() {
         </Text>
       </View>
 
-      <Row style={styles.stats}>
-        <Stat value={model.cycleCount || 0} label="Periods" />
-        <View style={styles.statDivider} />
-        <Stat value={entryCount} label="Entries" />
-        <View style={styles.statDivider} />
-        <Stat value={model.avgPeriod} label="Avg days" />
-      </Row>
-
       <View style={styles.links}>
         <Link
           icon="user"
@@ -104,19 +94,6 @@ export default function Profile() {
         </Text>
       </Pressable>
     </Screen>
-  );
-}
-
-function Stat({ value, label }) {
-  return (
-    <View style={styles.stat}>
-      <Text weight="bold" style={styles.statValue}>
-        {value}
-      </Text>
-      <Text weight="medium" style={styles.statLabel}>
-        {label}
-      </Text>
-    </View>
   );
 }
 
@@ -159,7 +136,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  identity: { alignItems: 'center', marginTop: 20 },
+  identity: { alignItems: 'center', marginTop: 30 },
   avatarWrap: { width: 92, height: 92, borderRadius: 46, marginBottom: 14 },
   avatarImage: {
     width: 92,
@@ -193,17 +170,8 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 21, letterSpacing: -0.3, textAlign: 'center' },
   sub: { fontSize: 13, color: colors.muted, marginTop: 4, textAlign: 'center' },
-  stats: { marginTop: 22 },
-  stat: { flex: 1, alignItems: 'center' },
-  statValue: { fontSize: 21, letterSpacing: -0.4 },
-  statLabel: { fontSize: 11.5, color: colors.muted, marginTop: 3 },
-  statDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 30,
-    backgroundColor: colors.borderStrong,
-  },
-  links: { marginTop: 22 },
-  link: { flexDirection: 'row', alignItems: 'center', paddingVertical: 13 },
+  links: { marginTop: 34 },
+  link: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15 },
   linkIcon: { width: 32, alignItems: 'flex-start' },
   linkLabel: { fontSize: 15.5 },
   linkSub: { fontSize: 12.5, color: colors.muted, marginTop: 2 },

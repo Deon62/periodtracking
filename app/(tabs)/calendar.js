@@ -5,6 +5,7 @@ import { useStore, MOODS, SYMPTOMS } from '../../src/store';
 import { colors, radius, absoluteFill } from '../../src/theme';
 import { Icon } from '../../src/icons';
 import { Screen, Text, Row, Button, Header } from '../../src/components/ui';
+import { Fab } from '../../src/components/Fab';
 import {
   today,
   startOfMonth,
@@ -106,6 +107,11 @@ export default function CalendarScreen() {
         <Legend swatch={styles.dayFertile} label="Fertile window" />
         <Legend swatch={styles.dayOvulation} label="Ovulation" />
       </View>
+
+      {/* Adding an entry sits with the calendar rather than Today: a day is
+          what an entry belongs to. Tap a day for that day; the button is the
+          shortcut to right now. */}
+      <Fab label="Add an entry for today" onPress={() => router.push('/log')} />
 
       <DaySheet
         dayKey={selected}

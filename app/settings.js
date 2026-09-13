@@ -8,7 +8,7 @@ import { Screen, Text, Row, PageHeader, Section, Hairline, ListRow } from '../sr
 
 export default function Settings() {
   const router = useRouter();
-  const { settings, setSettings, clearAll } = useStore();
+  const { settings, setSettings, clearAll, replayTour } = useStore();
 
   const confirmClear = () =>
     Alert.alert(
@@ -24,7 +24,6 @@ export default function Settings() {
     <Screen contentStyle={{ paddingBottom: 56 }}>
       <PageHeader
         title="Settings"
-        subtitle="Profile"
         onBack={() => (router.canGoBack() ? router.back() : router.replace('/profile'))}
       />
 
@@ -46,10 +45,6 @@ export default function Settings() {
           max={12}
           onChange={(v) => setSettings({ periodLength: v })}
         />
-        <Text weight="medium" style={styles.note}>
-          Starting points only. Once you have logged a couple of periods, the app
-          predicts from your own averages instead.
-        </Text>
       </Section>
 
       <Section title="Reminders">
@@ -81,8 +76,19 @@ export default function Settings() {
         )}
       </Section>
 
-      <Section title="Privacy & data">
-        <ListRow icon="shield" label="Storage" sub="Stays on this device" value="Private" />
+      <Section title="Help">
+        <ListRow
+          icon="sparkle"
+          label="Show the walkthrough again"
+          onPress={() => {
+            replayTour();
+            router.replace('/');
+          }}
+        />
+      </Section>
+
+      <Section title="Data">
+        <ListRow icon="shield" label="Stays on this device" value="Private" />
         <Hairline inset={42} />
         <ListRow icon="trash" label="Delete all data" danger onPress={confirmClear} />
       </Section>
@@ -93,9 +99,6 @@ export default function Settings() {
           style={styles.mark}
           resizeMode="contain"
         />
-        <Text weight="medium" style={styles.aboutText}>
-          No account, no sync, nothing leaves the device.
-        </Text>
         <Text weight="medium" style={styles.version}>
           Version 1.0.0
         </Text>
@@ -142,12 +145,6 @@ function Stepper({ icon, label, value, min, max, unit = 'days', onChange }) {
 }
 
 const styles = StyleSheet.create({
-  note: {
-    fontSize: 12.5,
-    color: colors.muted,
-    lineHeight: 18,
-    marginTop: 14,
-  },
   stepper: { paddingVertical: 13 },
   puck: {
     width: 30,
@@ -170,12 +167,6 @@ const styles = StyleSheet.create({
   stepValue: { alignItems: 'center', minWidth: 62 },
   stepUnit: { fontSize: 9.5, color: colors.muted, marginTop: -1 },
   about: { alignItems: 'center', marginTop: 44 },
-  mark: { width: 50, height: 44, opacity: 0.3, marginBottom: 12 },
-  aboutText: {
-    fontSize: 12,
-    color: colors.muted,
-    lineHeight: 18,
-    textAlign: 'center',
-  },
+  mark: { width: 46, height: 40, opacity: 0.3, marginBottom: 10 },
   version: { fontSize: 11.5, color: colors.faint, marginTop: 8 },
 });

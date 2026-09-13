@@ -34,6 +34,18 @@ export const colors = {
   faint: '#C6C6CF',
 };
 
+// Categorical series colours, for charts that need more than one hue. The two
+// brand colours lead; the rest are tuned to the same softness so a mood bar
+// never shouts louder than the page it sits on.
+export const chart = [
+  { solid: '#FF2A85', soft: '#FFE8F2' }, // brand pink
+  { solid: '#00A699', soft: '#E9F6F5' }, // teal
+  { solid: '#8A7BF0', soft: '#EFECFD' }, // lilac
+  { solid: '#F5A524', soft: '#FDF1DE' }, // amber
+  { solid: '#4BA9F5', soft: '#E7F2FD' }, // sky
+  { solid: '#C6C6CF', soft: '#F1F1F4' }, // everything else
+];
+
 export const font = {
   regular: 'Quicksand_400Regular',
   medium: 'Quicksand_500Medium',
